@@ -37,12 +37,12 @@ class DefaultSettings(BaseSettings):
     uploadCount:int = 10
     errorMinute:int = 1
     errorCount:int = 1
-    error_count = 2
-    error_time_window = 60
-    request_count = 10
-    request_time_window = 60
-    update_count = 2
-    update_time_window = 60
+    error_count:int = 2
+    error_time_window:int = 60
+    request_count:int = 10
+    request_time_window:int = 60
+    update_count:int = 2
+    update_time_window:int = 60
 
     # server
     admin_token:str = 'FileCodeBox2023'
