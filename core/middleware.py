@@ -35,7 +35,7 @@ class LoggingMiddleware:
         # 在这里记录下当前提交的body的数据，用于下文的提取
         request_data = await self.get_request_body(request)
         # 从头部里面获取出对应的请求头信息，用户用户机型等信息获取
-        user_agent = request.headers["user-agent"]
+        user_agent = request.headers.get('user-agent', None)
         log_msg = {
             "useragent": user_agent,
             'url': url,
