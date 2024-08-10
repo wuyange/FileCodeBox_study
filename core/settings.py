@@ -31,17 +31,31 @@ class DefaultSettings(BaseSettings):
     openUpload:int = 1
     uploadSize:int = 1024 * 1024 * 10
     expireStyle:List[str] = ['day', 'hour', 'minute', 'forever', 'count']
-    uploadMinute:int = 1
     opacity:float = 0.9
     background:str = ''
+    uploadMinute:int = 1
     uploadCount:int = 10
     errorMinute:int = 1
     errorCount:int = 1
+    error_count = 2
+    error_time_window = 60
+    request_count = 10
+    request_time_window = 60
+    update_count = 2
+    update_time_window = 60
 
     # server
     admin_token:str = 'FileCodeBox2023'
     port:int = 80
     showAdminAddr:int = 0
+    
+    # redis
+    redis_host:str = '127.0.0.1'
+    redis_port:int = 6379
+    redis_username:str = 'root'
+    redis_password:str = 'YS@147258'
+    redis_db:int = 1
+    
     
 class UserSettings(DefaultSettings):
     pass

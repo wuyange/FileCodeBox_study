@@ -4,6 +4,8 @@
 # @Software: PyCharm
 import asyncio
 import os
+import aioredis
+from urllib.parse import quote
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -19,7 +21,7 @@ from core.response import APIResponse
 from core.settings import data_root, settings, BASE_DIR
 from core.tasks import delete_expire_files
 from core.utils import setup_ext_loguru
-from core.middleware import LoggingMiddleware
+from core.middleware import LoggingMiddleware, IPLimitMIddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.openapi.docs import (
     get_redoc_html,
@@ -28,6 +30,13 @@ from fastapi.openapi.docs import (
 )
 
 app = FastAPI(docs_url=None, redoc_url=None)
+
+# 注册中间件
+app.add_middleware(IPLimitMIddleware, 
+                   max_requests=settings.request_count, request_time_window=settings.request_time_window,
+                   max_update=settings.update_count, update_time_window=settings.update_time_window,
+                   max_error_requests=settings.error_count, error_time_window=settings.error_time_window
+)
 
 app.add_middleware(LoggingMiddleware)
 
@@ -112,6 +121,9 @@ app.include_router(admin_api)
 async def startup_event():
     # 生成日志文件夹
     setup_ext_loguru()
+    # 初始化redis
+    redis_url = f'redis://{settings.redis_username}:{quote(settings.redis_password)}@{settings.redis_host}:{settings.redis_port}/{settings.redis_db}'
+    app.state.redis_client = aioredis.from_url(redis_url, encoding='utf-8', max_connections=10, decode_responses=True)
     # 启动后台任务，不定时删除过期文件
     asyncio.create_task(delete_expire_files())
     # 读取用户配置
@@ -121,6 +133,10 @@ async def startup_event():
     ip_limit['error'].count = settings.errorCount
     ip_limit['upload'].minutes = settings.uploadMinute
     ip_limit['upload'].count = settings.uploadCount
+
+@app.on_event('shutdown')
+async def shutdown_event():
+    app.state.redis_client.close()
 
 
 @app.get('/')
