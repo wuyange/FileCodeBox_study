@@ -40,7 +40,7 @@ class DefaultSettings(BaseSettings):
     error_count:int = 2
     error_time_window:int = 60
     request_count:int = 10
-    request_time_window:int = 60
+    request_time_window:int = 120
     update_count:int = 2
     update_time_window:int = 60
 

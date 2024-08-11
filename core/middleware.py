@@ -74,7 +74,7 @@ class IPLimitMIddleware:
         self.error_time_window = error_time_window
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
-        if scope['type'] != 'http':
+        if scope['type'] != 'http' or scope['path'].startswith('/assets'):
             # 调用下一个中间件或应用
             await self.app(scope, receive, send)
             return
