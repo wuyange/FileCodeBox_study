@@ -2,6 +2,7 @@ import time
 from datetime import datetime
 from loguru import logger
 from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 from typing import Dict, AnyStr
 
@@ -86,30 +87,35 @@ class IPLimitMIddleware:
         
         # 判断是否因为错误次数过多而被锁定
         count = await redis_client.get(f'IP:{client_ip}:error')
-        if count and count > self.max_error_requests:
+        if count and int(count) > self.max_error_requests:
             logger.error(f'{client_ip} is locked due to too many errors')
             raise Exception(f'{client_ip} is locked due to too many errors')
 
         # 限制IP请求频率
         count = await redis_client.incr(f'IP:{client_ip}')
-        print(count)
         await redis_client.expire(f'IP:{client_ip}', self.request_time_window)
-        if count > self.max_requests:
+        if count and int(count) > self.max_requests:
             logger.error(f'{client_ip} exceed the maximum request limit')
             raise Exception('Too Many Requests')
         
         # 限制IP上传文件频率
-        count = await redis_client.incr(f'IP:{client_ip}:upload')
-        await redis_client.expire(f'IP:{client_ip}:upload', self.update_time_window)
-        if count > self.max_update:
-            logger.error(f'{client_ip} 上传次数过多')
-            raise Exception('Too Many uploads')
+        if scope['path'].endswith('/file'):
+            count = await redis_client.incr(f'IP:{client_ip}:upload')
+            await redis_client.expire(f'IP:{client_ip}:upload', self.update_time_window)
+            if count and int(count) > self.max_update:
+                logger.error(f'{client_ip} 上传次数过多')
+                raise Exception('Too Many uploads')
         
-        # 统计错误次数
-        response = await self.app(scope, receive, send)
-        if response.status_code != 400:
-            count = await redis_client.incr(f'IP:{client_ip}:error')
-            await redis_client.expire(f'IP:{client_ip}:error', self.error_time_window)
+        async def custom_send(message):
+            # 统计错误次数
+            if message['type'] == 'http.response.start':
+                status_code = message['status']
+                if status_code != 200:
+                    await redis_client.incr(f'IP:{client_ip}:error')
+                    await redis_client.expire(f'IP:{client_ip}:error', self.error_time_window)
+            await send(message)
+
+        response = await self.app(scope, receive, custom_send)
         
         return response
 

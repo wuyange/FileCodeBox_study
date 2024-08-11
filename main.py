@@ -22,6 +22,7 @@ from core.settings import data_root, settings, BASE_DIR
 from core.tasks import delete_expire_files
 from core.utils import setup_ext_loguru
 from core.middleware import LoggingMiddleware, IPLimitMIddleware
+from core.exceptions import ApiExceptionHandler
 from fastapi.openapi.utils import get_openapi
 from fastapi.openapi.docs import (
     get_redoc_html,
@@ -30,6 +31,9 @@ from fastapi.openapi.docs import (
 )
 
 app = FastAPI(docs_url=None, redoc_url=None)
+
+# 注册异常
+ApiExceptionHandler(app=app)
 
 # 注册中间件
 app.add_middleware(
@@ -136,7 +140,7 @@ async def startup_event():
 
 @app.on_event('shutdown')
 async def shutdown_event():
-    app.state.redis_client.close()
+    await app.state.redis_client.close()
 
 
 @app.get('/')
