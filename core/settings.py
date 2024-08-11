@@ -56,6 +56,17 @@ class DefaultSettings(BaseSettings):
     redis_password:str = '123456'
     redis_db:int = 1
     
+    #mysql
+    mysql_host:str = '127.0.0.1'
+    mysql_password:str = '123456'
+    mysql_user:str = 'root'
+    mysql_port:int = 3306
+    mysql_database:str = 'filecodebox'
+    mysql_echo:bool = True
+    mysql_pool_size:int = 20
+    mysql_max_overflow:int = 0
+    mysql_driver:str = 'mysql+aiomysql'
+    
     
 class UserSettings(DefaultSettings):
     pass
