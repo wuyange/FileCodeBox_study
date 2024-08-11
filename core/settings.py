@@ -52,8 +52,8 @@ class DefaultSettings(BaseSettings):
     # redis
     redis_host:str = '127.0.0.1'
     redis_port:int = 6379
-    redis_username:str = 'root'
-    redis_password:str = '123456'
+    redis_username:str = 'default'
+    redis_password:str = 'YS@147258'
     redis_db:int = 1
     
     
