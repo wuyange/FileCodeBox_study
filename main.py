@@ -32,20 +32,20 @@ from fastapi.openapi.docs import (
 app = FastAPI(docs_url=None, redoc_url=None)
 
 # 注册中间件
-app.add_middleware(IPLimitMIddleware, 
-                   max_requests=settings.request_count, request_time_window=settings.request_time_window,
-                   max_update=settings.update_count, update_time_window=settings.update_time_window,
-                   max_error_requests=settings.error_count, error_time_window=settings.error_time_window
-)
-
-app.add_middleware(LoggingMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.add_middleware(LoggingMiddleware)
+
+app.add_middleware(IPLimitMIddleware, 
+                   max_requests=settings.request_count, request_time_window=settings.request_time_window,
+                   max_update=settings.update_count, update_time_window=settings.update_time_window,
+                   max_error_requests=settings.error_count, error_time_window=settings.error_time_window
 )
 
 app.mount('/assets', StaticFiles(directory='./fcb-fronted/dist/assets'), name="assets")
