@@ -3,6 +3,7 @@
 # @File    : storage.py
 # @Software: PyCharm
 from typing import Optional
+from threading import local
 
 import aiohttp
 import asyncio
@@ -22,12 +23,12 @@ from fastapi.responses import FileResponse
 
 
 class FileStorageInterface:
-    _instance: Optional['FileStorageInterface'] = None
+    _thread_local = local()
 
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(FileStorageInterface, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
+        if not hasattr(cls._thread_local, 'instance'):
+            cls._thread_local.instance = super().__new__(cls)
+        return cls._thread_local.instance
 
     async def save_file(self, file: UploadFile, save_path: str):
         """
@@ -254,45 +255,45 @@ class OneDriveFileStorage(FileStorageInterface):
             return await asyncio.to_thread(self._get_file_url, await file_code.get_file_path(), f'{file_code.prefix}{file_code.suffix}')
 
 
-class OpenDALFileStorage(FileStorageInterface):
-    def __init__(self):
-        try:
-            import opendal
-        except ImportError:
-            raise ImportError('请先安装 `opendal`, 例如: "pip install opendal"')
-        self.service = settings.opendal_scheme
-        service_settings = {}
-        for key, value in settings.items():
-            if key.startswith('opendal_' + self.service):
-                setting_name = key.split('_', 2)[2]
-                service_settings[setting_name] = value
-        self.operator = opendal.AsyncOperator(settings.opendal_scheme, **service_settings)
+# class OpenDALFileStorage(FileStorageInterface):
+#     def __init__(self):
+#         try:
+#             import opendal
+#         except ImportError:
+#             raise ImportError('请先安装 `opendal`, 例如: "pip install opendal"')
+#         self.service = settings.opendal_scheme
+#         service_settings = {}
+#         for key, value in settings.items():
+#             if key.startswith('opendal_' + self.service):
+#                 setting_name = key.split('_', 2)[2]
+#                 service_settings[setting_name] = value
+#         self.operator = opendal.AsyncOperator(settings.opendal_scheme, **service_settings)
 
-    async def save_file(self, file: UploadFile, save_path: str):
-        await self.operator.write(save_path, file.file.read())
+#     async def save_file(self, file: UploadFile, save_path: str):
+#         await self.operator.write(save_path, file.file.read())
 
-    async def delete_file(self, file_code: FileCodes):
-        await self.operator.delete(await file_code.get_file_path())
+#     async def delete_file(self, file_code: FileCodes):
+#         await self.operator.delete(await file_code.get_file_path())
 
-    async def get_file_url(self, file_code: FileCodes):
-        return await get_file_url(file_code.code)
+#     async def get_file_url(self, file_code: FileCodes):
+#         return await get_file_url(file_code.code)
 
-    async def get_file_response(self, file_code: FileCodes):
-        try:
-            filename = file_code.prefix + file_code.suffix
-            content = await self.operator.read(await file_code.get_file_path())
-            headers = {
-                "Content-Disposition": f'attachment; filename="{filename}"'
-            }
-            return Response(content, headers=headers, media_type="application/octet-stream")
-        except Exception as e:
-            print(e, file=sys.stderr)
-            raise HTTPException(status_code=404, detail="文件已过期删除")
+#     async def get_file_response(self, file_code: FileCodes):
+#         try:
+#             filename = file_code.prefix + file_code.suffix
+#             content = await self.operator.read(await file_code.get_file_path())
+#             headers = {
+#                 "Content-Disposition": f'attachment; filename="{filename}"'
+#             }
+#             return Response(content, headers=headers, media_type="application/octet-stream")
+#         except Exception as e:
+#             print(e, file=sys.stderr)
+#             raise HTTPException(status_code=404, detail="文件已过期删除")
 
 
 storages = {
     'local': SystemFileStorage,
     's3': S3FileStorage,
     'onedrive': OneDriveFileStorage,
-    'opendal': OpenDALFileStorage,
+    # 'opendal': OpenDALFileStorage,
 }
