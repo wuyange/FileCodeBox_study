@@ -74,13 +74,13 @@ class SystemFileStorage(FileStorageInterface):
                 chunk = file.read(self.chunk_size)
 
     async def save_file(self, file: UploadFile, save_path: str):
-        save_path = self.root_path / save_path
+        save_path:Path = self.root_path / save_path
         if not save_path.parent.exists():
             save_path.parent.mkdir(parents=True)
         await asyncio.to_thread(self._save, file.file, save_path)
 
     async def delete_file(self, file_code: FileCodes):
-        save_path = self.root_path / await file_code.get_file_path()
+        save_path:Path = self.root_path / await file_code.get_file_path()
         if save_path.exists():
             save_path.unlink()
 
@@ -88,7 +88,7 @@ class SystemFileStorage(FileStorageInterface):
         return await get_file_url(file_code.code)
 
     async def get_file_response(self, file_code: FileCodes):
-        file_path = self.root_path / await file_code.get_file_path()
+        file_path:Path = self.root_path / await file_code.get_file_path()
         if not file_path.exists():
             return APIResponse(code=404, detail='文件已过期删除')
         return FileResponse(file_path, filename=file_code.prefix + file_code.suffix)
