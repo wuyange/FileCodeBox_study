@@ -4,8 +4,12 @@
 # @Software: PyCharm
 # 导入所需的库和模块
 from fastapi import APIRouter, Form, UploadFile, File, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import Select
+from typing import Union
+
 from apps.admin.depends import admin_required
-from apps.base.models import FileCodes
+from apps.base.models import FileCodes, depends_get_db_session
 from apps.base.pydantics import SelectFileModel
 from apps.base.utils import get_expire_info, get_file_path_name, ip_limit
 from core.response import APIResponse
@@ -22,7 +26,9 @@ share_api = APIRouter(
 
 # 分享文本的API
 @share_api.post('/text/', dependencies=[Depends(admin_required)])
-async def share_text(text: str = Form(...), expire_value: int = Form(default=1, gt=0), expire_style: str = Form(default='day'), ip: str = Depends(ip_limit['upload'])):
+async def share_text(text: str = Form(...), expire_value: int = Form(default=1, gt=0), 
+                     expire_style: str = Form(default='day'), ip: str = Depends(ip_limit['upload']), 
+                     db_session: AsyncSession = Depends(depends_get_db_session)):
     # 获取大小
     text_size = len(text.encode('utf-8'))
     # 限制 222KB
@@ -32,15 +38,15 @@ async def share_text(text: str = Form(...), expire_value: int = Form(default=1, 
     # 获取过期信息
     expired_at, expired_count, used_count, code = await get_expire_info(expire_value, expire_style)
     # 创建一个新的FileCodes实例
-    await FileCodes.create(
+    db_session.add(FileCodes(
         code=code,
         text=text,
         expired_at=expired_at,
         expired_count=expired_count,
         used_count=used_count,
         size=len(text),
-        prefix='文本分享'
-    )
+        prefix='文本分享',
+    ))
     # 添加IP到限制列表
     ip_limit['upload'].add_ip(ip)
     # 返回API响应
@@ -51,8 +57,9 @@ async def share_text(text: str = Form(...), expire_value: int = Form(default=1, 
 
 # 分享文件的API
 @share_api.post('/file/', dependencies=[Depends(admin_required)])
-async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: str = Form(default='day'), file: UploadFile = File(...),
-                     ip: str = Depends(ip_limit['upload'])):
+async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: str = Form(default='day'), 
+                     file: UploadFile = File(...), ip: str = Depends(ip_limit['upload']), 
+                     db_session: AsyncSession = Depends(depends_get_db_session)):
     if file.size > settings.uploadSize:
         # 转换为 MB 并格式化输出
         max_size_mb = settings.uploadSize / (1024 * 1024)
@@ -67,7 +74,7 @@ async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: st
     file_storage: FileStorageInterface = storages[settings.file_storage]()
     await file_storage.save_file(file, save_path)
     # 创建一个新的FileCodes实例
-    await FileCodes.create(
+    db_session.add(FileCodes(
         code=code,
         prefix=prefix,
         suffix=suffix,
@@ -77,7 +84,7 @@ async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: st
         expired_at=expired_at,
         expired_count=expired_count,
         used_count=used_count,
-    )
+    ))
     # 添加IP到限制列表
     ip_limit['upload'].add_ip(ip)
     # 返回API响应
@@ -88,14 +95,15 @@ async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: st
 
 
 # 根据code获取文件
-async def get_code_file_by_code(code, check=True):
+async def get_code_file_by_code(code, check=True, db_session: AsyncSession = Depends(depends_get_db_session)):
     # 查询文件
-    file_code = await FileCodes.filter(code=code).first()
+    # file_code = await FileCodes.filter(code=code).first()
+    file_code:Union[FileCodes, None] = (await db_session.execute(Select(FileCodes).where(FileCodes.code == code))).first()
     # 检查文件是否存在
     if not file_code:
         return False, '文件不存在'
     # 检查文件是否过期
-    if await file_code.is_expired() and check:
+    if await file_code.is_expired and check:
         return False, '文件已过期',
     return True, file_code
 

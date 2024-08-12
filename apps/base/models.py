@@ -146,3 +146,18 @@ class FileCodes(Base):
     expired_count: Mapped[int] = mapped_column(Integer, comment='可用次数', default=0)
     used_count: Mapped[int] = mapped_column(Integer, comment='已用次数', default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, comment='创建时间', default_factory=datetime.now)
+
+    @property
+    async def is_expired(self):
+        # 按时间
+        if self.expired_at is None:
+            return False
+        if self.expired_at and self.expired_count < 0:
+            return self.expired_at < await get_now()
+        # 按次数
+        else:
+            return self.expired_count <= 0
+
+    @property
+    async def get_file_path(self):
+        return f"{self.file_path}/{self.uuid_file_name}"
