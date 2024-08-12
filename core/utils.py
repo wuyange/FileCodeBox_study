@@ -10,7 +10,6 @@ import time
 from loguru import logger
 from pathlib import Path
 
-from apps.base.depends import IPRateLimit
 from .settings import log_root
 
 

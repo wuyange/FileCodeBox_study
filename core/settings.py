@@ -29,6 +29,7 @@ class DefaultSettings(BaseSettings):
     file_storage:str =  'local'
     max_save_seconds:int = 0
     openUpload:int = 1
+    textSize:int = 2000
     uploadSize:int = 1024 * 1024 * 10
     expireStyle:List[str] = ['day', 'hour', 'minute', 'forever', 'count']
     opacity:float = 0.9

@@ -10,6 +10,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import Select
+from typing import Union
 from tortoise.contrib.fastapi import register_tortoise
 
 from apps.base.depends import IPRateLimit
@@ -17,6 +19,7 @@ from apps.base.models import KeyValue
 from apps.base.utils import ip_limit
 from apps.base.views import share_api
 from apps.admin.views import admin_api
+from apps.base.depends import async_context_get_db
 from core.response import APIResponse
 from core.settings import data_root, settings, BASE_DIR
 from core.tasks import delete_expire_files
@@ -131,8 +134,13 @@ async def startup_event():
     # 启动后台任务，不定时删除过期文件
     asyncio.create_task(delete_expire_files())
     # 读取用户配置
-    # user_config, created = await KeyValue.get_or_create(key='settings', defaults={'value': DEFAULT_CONFIG})
-    # settings.user_config = user_config.value
+    async with async_context_get_db() as db_session:
+        key:Union[KeyValue, None] = (await db_session.execute(Select(KeyValue).where(KeyValue.key == 'settings'))).first()
+        if key: 
+            key.value = settings.model_dump()
+        else:
+            key = KeyValue(key='settings', value=settings.model_dump())
+            await db_session.add(key)
     ip_limit['error'].minutes = settings.errorMinute
     ip_limit['error'].count = settings.errorCount
     ip_limit['upload'].minutes = settings.uploadMinute

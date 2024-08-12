@@ -9,13 +9,14 @@ from sqlalchemy import Select
 from typing import Union
 
 from apps.admin.depends import admin_required
-from apps.base.models import FileCodes, depends_get_db_session
+from apps.base.models import FileCodes
 from apps.base.pydantics import SelectFileModel
 from apps.base.utils import get_expire_info, get_file_path_name, ip_limit
 from core.response import APIResponse
 from core.settings import settings
 from core.storage import storages, FileStorageInterface
 from core.utils import get_select_token
+from .depends import depends_get_db_session
 
 # 创建一个API路由
 share_api = APIRouter(
@@ -30,9 +31,9 @@ async def share_text(text: str = Form(...), expire_value: int = Form(default=1, 
                      expire_style: str = Form(default='day'), ip: str = Depends(ip_limit['upload']), 
                      db_session: AsyncSession = Depends(depends_get_db_session)):
     # 获取大小
-    text_size = len(text.encode('utf-8'))
+    text_size = len(text)
     # 限制 222KB
-    max_txt_size = 222 * 1024  # 转换为字节
+    max_txt_size = settings.textSize
     if text_size > max_txt_size:
         raise HTTPException(status_code=403, detail=f'内容过多，建议采用文件形式')
     # 获取过期信息
@@ -124,8 +125,8 @@ async def get_code_file(code: str, ip: str = Depends(ip_limit['error'])):
     file_code.used_count += 1
     if file_code.expired_count > 0:
         file_code.expired_count -= 1
-    # 保存文件
-    await file_code.save()
+    # # 保存文件
+    # await file_code.save()
     # 返回文件响应
     return await file_storage.get_file_response(file_code)
 
@@ -146,8 +147,8 @@ async def select_file(data: SelectFileModel, ip: str = Depends(ip_limit['error']
     file_code.used_count += 1
     if file_code.expired_count > 0:
         file_code.expired_count -= 1
-    # 保存文件
-    await file_code.save()
+    # # 保存文件
+    # await file_code.save()
     # 返回API响应
     return APIResponse(detail={
         'code': file_code.code,

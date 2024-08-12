@@ -63,7 +63,7 @@ async def depends_get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @asynccontextmanager
-async def async_context_get_db() -> AsyncGenerator:
+async def async_context_get_db() -> AsyncGenerator[AsyncSession, None]:
     '''
         async def init() -> None:
         pass

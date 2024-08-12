@@ -13,6 +13,7 @@ import io
 import re
 import sys
 import aioboto3
+import aiofiles
 from botocore.config import Config
 from fastapi import HTTPException, Response, UploadFile
 from core.response import APIResponse
@@ -66,18 +67,21 @@ class SystemFileStorage(FileStorageInterface):
         self.chunk_size = 256 * 1024
         self.root_path = data_root
 
-    def _save(self, file, save_path):
-        with open(save_path, 'wb') as f:
-            chunk = file.read(self.chunk_size)
-            while chunk:
-                f.write(chunk)
-                chunk = file.read(self.chunk_size)
+    # def _save(self, file, save_path):
+    #     with open(save_path, 'wb') as f:
+    #         chunk = file.read(self.chunk_size)
+    #         while chunk:
+    #             f.write(chunk)
+    #             chunk = file.read(self.chunk_size)
 
     async def save_file(self, file: UploadFile, save_path: str):
         save_path:Path = self.root_path / save_path
         if not save_path.parent.exists():
             save_path.parent.mkdir(parents=True)
-        await asyncio.to_thread(self._save, file.file, save_path)
+        async with aiofiles.open(save_path, "wb") as out_file:
+            while content := await file.read(1024):  # 每次读取 1024 字节
+                await out_file.write(content)
+        # await asyncio.to_thread(self._save, file.file, save_path)
 
     async def delete_file(self, file_code: FileCodes):
         save_path:Path = self.root_path / await file_code.get_file_path()

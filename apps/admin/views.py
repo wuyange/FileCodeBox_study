@@ -5,10 +5,13 @@
 import math
 
 from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import Select, Delete, Update, func
 
 from apps.admin.depends import admin_required
 from apps.admin.pydantics import IDData
 from apps.base.models import FileCodes, KeyValue
+from apps.base.depends import depends_get_db_session
 from core.response import APIResponse
 from core.settings import settings
 from core.storage import FileStorageInterface, storages
@@ -25,21 +28,26 @@ async def login():
 
 
 @admin_api.delete('/file/delete', dependencies=[Depends(admin_required)])
-async def file_delete(data: IDData):
+async def file_delete(data: IDData, db_session: AsyncSession = Depends(depends_get_db_session)):
     file_storage: FileStorageInterface = storages[settings.file_storage]()
-    file_code = await FileCodes.get(id=data.id)
+    file_code = await db_session.execute(Delete(Select(FileCodes).where(FileCodes.id == data.id)))
     await file_storage.delete_file(file_code)
-    await file_code.delete()
     return APIResponse()
 
 
 @admin_api.get('/file/list', dependencies=[Depends(admin_required)])
-async def file_list(page: float = 1, size: int = 10):
+async def file_list(page: float = 1, size: int = 10, db_session: AsyncSession = Depends(depends_get_db_session)):
+    # return APIResponse(detail={
+    #     'page': page,
+    #     'size': size,
+    #     'data': await FileCodes.all().limit(size).offset((math.ceil(page) - 1) * size),
+    #     'total': await FileCodes.all().count(),
+    # })
     return APIResponse(detail={
         'page': page,
         'size': size,
-        'data': await FileCodes.all().limit(size).offset((math.ceil(page) - 1) * size),
-        'total': await FileCodes.all().count(),
+        'data': await db_session.execute(Select(FileCodes).limit(size).offset((math.ceil(page) - 1) * size)),
+        'total': (await db_session.execute(Select(func.count(FileCodes.id)))).scalar_one(),
     })
 
 
@@ -49,7 +57,7 @@ async def get_config():
 
 
 @admin_api.patch('/config/update', dependencies=[Depends(admin_required)])
-async def update_config(data: dict):
+async def update_config(data: dict, db_session: AsyncSession = Depends(depends_get_db_session)):
     admin_token = data.get('admin_token')
     for key, value in data.items():
         if key not in settings.model_dump().keys():
@@ -62,16 +70,17 @@ async def update_config(data: dict):
             data[key] = value
     if admin_token is None or admin_token == '':
         return APIResponse(code=400, detail='管理员密码不能为空')
-    await KeyValue.filter(key='settings').update(value=data)
+    key:KeyValue = (await db_session.execute(Select(KeyValue).where(KeyValue.key == 'settings'))).first()
+    key.value = data
     for k, v in data.items():
         settings.__setattr__(k, v)
     return APIResponse()
 
 
 # 根据code获取文件
-async def get_file_by_id(id):
+async def get_file_by_id(id, db_session: AsyncSession = Depends(depends_get_db_session)):
     # 查询文件
-    file_code = await FileCodes.filter(id=id).first()
+    file_code = (await db_session.execute(Select(FileCodes).where(FileCodes.id == id))).first()
     # 检查文件是否存在
     if not file_code:
         return False, '文件不存在'
