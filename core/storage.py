@@ -84,7 +84,7 @@ class SystemFileStorage(FileStorageInterface):
         # await asyncio.to_thread(self._save, file.file, save_path)
 
     async def delete_file(self, file_code: FileCodes):
-        save_path:Path = self.root_path / (await file_code.get_file_path())
+        save_path:Path = self.root_path / (await file_code.get_file_path)
         if save_path.exists():
             save_path.unlink()
 
@@ -92,7 +92,7 @@ class SystemFileStorage(FileStorageInterface):
         return await get_file_url(file_code.code)
 
     async def get_file_response(self, file_code: FileCodes):
-        file_path:Path = self.root_path / (await file_code.get_file_path())
+        file_path:Path = self.root_path / (await file_code.get_file_path)
         if not file_path.exists():
             return APIResponse(code=404, detail='文件已过期删除')
         return FileResponse(file_path, filename=file_code.prefix + file_code.suffix)
@@ -123,13 +123,13 @@ class S3FileStorage(FileStorageInterface):
 
     async def delete_file(self, file_code: FileCodes):
         async with self.session.client("s3", endpoint_url=self.endpoint_url, region_name=self.region_name, config=Config(signature_version=self.signature_version)) as s3:
-            await s3.delete_object(Bucket=self.bucket_name, Key=await file_code.get_file_path())
+            await s3.delete_object(Bucket=self.bucket_name, Key=await file_code.get_file_path)
 
     async def get_file_response(self, file_code: FileCodes):
         try:
             filename = file_code.prefix + file_code.suffix
             async with self.session.client("s3", endpoint_url=self.endpoint_url, region_name=self.region_name, config=Config(signature_version=self.signature_version)) as s3:
-                link = await s3.generate_presigned_url('get_object', Params={'Bucket': self.bucket_name, 'Key': await file_code.get_file_path()}, ExpiresIn=3600)
+                link = await s3.generate_presigned_url('get_object', Params={'Bucket': self.bucket_name, 'Key': await file_code.get_file_path}, ExpiresIn=3600)
             tmp = io.BytesIO()
             async with aiohttp.ClientSession() as session:
                 async with session.get(link) as resp:
@@ -148,7 +148,7 @@ class S3FileStorage(FileStorageInterface):
             return await get_file_url(file_code.code)
         else:
             async with self.session.client("s3", endpoint_url=self.endpoint_url, region_name=self.region_name, config=Config(signature_version=self.signature_version)) as s3:
-                result = await s3.generate_presigned_url('get_object', Params={'Bucket': self.bucket_name, 'Key': await file_code.get_file_path()}, ExpiresIn=3600)
+                result = await s3.generate_presigned_url('get_object', Params={'Bucket': self.bucket_name, 'Key': await file_code.get_file_path}, ExpiresIn=3600)
                 return result
 
 
@@ -221,7 +221,7 @@ class OneDriveFileStorage(FileStorageInterface):
                 raise e
 
     async def delete_file(self, file_code: FileCodes):
-        await asyncio.to_thread(self._delete, await file_code.get_file_path())
+        await asyncio.to_thread(self._delete, await file_code.get_file_path)
 
     def _convert_link_to_download_link(self, link):
         p1 = re.search(r'https:\/\/(.+)\.sharepoint\.com', link).group(1)
@@ -240,7 +240,7 @@ class OneDriveFileStorage(FileStorageInterface):
     async def get_file_response(self, file_code: FileCodes):
         try:
             filename = file_code.prefix + file_code.suffix
-            link = await asyncio.to_thread(self._get_file_url, await file_code.get_file_path(), filename)
+            link = await asyncio.to_thread(self._get_file_url, await file_code.get_file_path, filename)
             tmp = io.BytesIO()
             async with aiohttp.ClientSession() as session:
                 async with session.get(link) as resp:
@@ -256,7 +256,7 @@ class OneDriveFileStorage(FileStorageInterface):
         if self.proxy:
             return await get_file_url(file_code.code)
         else:
-            return await asyncio.to_thread(self._get_file_url, await file_code.get_file_path(), f'{file_code.prefix}{file_code.suffix}')
+            return await asyncio.to_thread(self._get_file_url, await file_code.get_file_path, f'{file_code.prefix}{file_code.suffix}')
 
 
 # class OpenDALFileStorage(FileStorageInterface):
