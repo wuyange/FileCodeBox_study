@@ -98,8 +98,7 @@ async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: st
 # 根据code获取文件
 async def get_code_file_by_code(code, check=True, db_session: AsyncSession = Depends(depends_get_db_session)):
     # 查询文件
-    # file_code = await FileCodes.filter(code=code).first()
-    file_code:Union[FileCodes, None] = (await db_session.execute(Select(FileCodes).where(FileCodes.code == code))).first()
+    file_code:Union[FileCodes, None] = (await db_session.execute(Select(FileCodes).where(FileCodes.code == code))).scalars().first()
     # 检查文件是否存在
     if not file_code:
         return False, '文件不存在'

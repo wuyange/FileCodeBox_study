@@ -70,7 +70,7 @@ async def update_config(data: dict, db_session: AsyncSession = Depends(depends_g
             data[key] = value
     if admin_token is None or admin_token == '':
         return APIResponse(code=400, detail='管理员密码不能为空')
-    key:KeyValue = (await db_session.execute(Select(KeyValue).where(KeyValue.key == 'settings'))).first()
+    key:KeyValue = (await db_session.execute(Select(KeyValue).where(KeyValue.key == 'settings'))).scalars().first()
     key.value = data
     for k, v in data.items():
         settings.__setattr__(k, v)
@@ -80,7 +80,7 @@ async def update_config(data: dict, db_session: AsyncSession = Depends(depends_g
 # 根据code获取文件
 async def get_file_by_id(id, db_session: AsyncSession = Depends(depends_get_db_session)):
     # 查询文件
-    file_code = (await db_session.execute(Select(FileCodes).where(FileCodes.id == id))).first()
+    file_code = (await db_session.execute(Select(FileCodes).where(FileCodes.id == id))).scalars().first()
     # 检查文件是否存在
     if not file_code:
         return False, '文件不存在'

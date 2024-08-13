@@ -6,6 +6,7 @@ import datetime
 import uuid
 import os
 from fastapi import UploadFile, HTTPException
+from sqlalchemy import Select
 
 from apps.base.depends import IPRateLimit
 from apps.base.models import FileCodes
@@ -83,9 +84,9 @@ async def get_random_code(style='num'):
     """
     while True:
         code = await get_random_num() if style == 'num' else await get_random_string()
-        if not await FileCodes.filter(code=code).exists():
-        
-            return code
+        async with async_context_get_db() as db_session:
+            if not (await db_session.execute(Select(FileCodes).where(FileCodes.code == code))).scalars().first():
+                return code
 
 
 ip_limit = {

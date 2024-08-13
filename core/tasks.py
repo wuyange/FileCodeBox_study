@@ -4,9 +4,10 @@
 # @Software: PyCharm
 import asyncio
 
-from tortoise.expressions import Q
+from sqlalchemy import Select, or_
 
 from apps.base.models import FileCodes
+from apps.base.depends import async_context_get_db
 from apps.base.utils import ip_limit
 from core.settings import settings
 from core.storage import FileStorageInterface, storages
@@ -19,7 +20,10 @@ async def delete_expire_files():
         try:
             await ip_limit['error'].remove_expired_ip()
             await ip_limit['upload'].remove_expired_ip()
-            expire_data = await FileCodes.filter(Q(expired_at__lt=await get_now()) | Q(expired_count=0)).all()
+            # expire_data = await FileCodes.filter(Q(expired_at__lt=await get_now()) | Q(expired_count=0)).all()
+            async with async_context_get_db() as db:
+                expire_data = await db.execute(Select(FileCodes).where(or_(FileCodes.expired_at < await get_now(), 
+                                                                           FileCodes.expired_count == 0)))
             for exp in expire_data:
                 await file_storage.delete_file(exp)
                 await exp.delete()

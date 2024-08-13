@@ -15,7 +15,7 @@ from typing import Union
 from tortoise.contrib.fastapi import register_tortoise
 
 from apps.base.depends import IPRateLimit
-from apps.base.models import KeyValue
+from apps.base.models import KeyValue, Base, async_engine
 from apps.base.utils import ip_limit
 from apps.base.views import share_api
 from apps.admin.views import admin_api
@@ -126,6 +126,18 @@ app.include_router(admin_api)
 
 @app.on_event("startup")
 async def startup_event():
+    # 创建数据库
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    async with async_context_get_db() as db_session:
+        # 读取用户配置
+        key:Union[KeyValue, None] = (await db_session.execute(Select(KeyValue).where(KeyValue.key == 'settings'))).scalars().first()
+        if key: 
+            key.value = settings.model_dump()
+        else:
+            key = KeyValue(key='settings', value=settings.model_dump())
+            db_session.add(key)
     # 生成日志文件夹
     setup_ext_loguru()
     # 初始化redis
@@ -133,14 +145,6 @@ async def startup_event():
     app.state.redis_client = aioredis.from_url(redis_url, encoding='utf-8', max_connections=10, decode_responses=True)
     # 启动后台任务，不定时删除过期文件
     asyncio.create_task(delete_expire_files())
-    # 读取用户配置
-    async with async_context_get_db() as db_session:
-        key:Union[KeyValue, None] = (await db_session.execute(Select(KeyValue).where(KeyValue.key == 'settings'))).first()
-        if key: 
-            key.value = settings.model_dump()
-        else:
-            key = KeyValue(key='settings', value=settings.model_dump())
-            await db_session.add(key)
     ip_limit['error'].minutes = settings.errorMinute
     ip_limit['error'].count = settings.errorCount
     ip_limit['upload'].minutes = settings.uploadMinute
