@@ -84,7 +84,7 @@ class SystemFileStorage(FileStorageInterface):
         # await asyncio.to_thread(self._save, file.file, save_path)
 
     async def delete_file(self, file_code: FileCodes):
-        save_path:Path = self.root_path / await file_code.get_file_path()
+        save_path:Path = self.root_path / (await file_code.get_file_path())
         if save_path.exists():
             save_path.unlink()
 
