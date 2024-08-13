@@ -38,7 +38,7 @@ async def get_now():
     :return:
     """
     return datetime.datetime.now(
-        datetime.timezone(datetime.timedelta(hours=8))
+        # datetime.timezone(datetime.timedelta(hours=8))
     )
 
 
