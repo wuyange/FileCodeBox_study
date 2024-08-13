@@ -110,10 +110,10 @@ async def get_code_file_by_code(code, check=True, db_session: AsyncSession = Dep
 
 # 获取文件的API
 @share_api.get('/select/')
-async def get_code_file(code: str, ip: str = Depends(ip_limit['error'])):
+async def get_code_file(code: str, ip: str = Depends(ip_limit['error']), db_session: AsyncSession = Depends(depends_get_db_session)):
     file_storage: FileStorageInterface = storages[settings.file_storage]()
     # 获取文件
-    has, file_code = await get_code_file_by_code(code)
+    has, file_code = await get_code_file_by_code(code, db_session=db_session)
     # 检查文件是否存在
     if not has:
         # 添加IP到限制列表
@@ -132,10 +132,11 @@ async def get_code_file(code: str, ip: str = Depends(ip_limit['error'])):
 
 # 选择文件的API
 @share_api.post('/select/')
-async def select_file(data: SelectFileModel, ip: str = Depends(ip_limit['error'])):
+async def select_file(data: SelectFileModel, ip: str = Depends(ip_limit['error']), 
+                      db_session: AsyncSession = Depends(depends_get_db_session)):
     file_storage: FileStorageInterface = storages[settings.file_storage]()
     # 获取文件
-    has, file_code = await get_code_file_by_code(data.code)
+    has, file_code = await get_code_file_by_code(data.code, db_session=db_session)
     # 检查文件是否存在
     if not has:
         # 添加IP到限制列表
@@ -159,7 +160,7 @@ async def select_file(data: SelectFileModel, ip: str = Depends(ip_limit['error']
 
 # 下载文件的API
 @share_api.get('/download')
-async def download_file(key: str, code: str, ip: str = Depends(ip_limit['error'])):
+async def download_file(key: str, code: str, ip: str = Depends(ip_limit['error']), db_session: AsyncSession = Depends(depends_get_db_session)):
     file_storage: FileStorageInterface = storages[settings.file_storage]()
     # 检查token是否有效
     is_valid = await get_select_token(code) == key
@@ -167,7 +168,7 @@ async def download_file(key: str, code: str, ip: str = Depends(ip_limit['error']
         # 添加IP到限制列表
         ip_limit['error'].add_ip(ip)
     # 获取文件
-    has, file_code = await get_code_file_by_code(code, False)
+    has, file_code = await get_code_file_by_code(code, False, db_session=db_session)
     # 检查文件是否存在
     if not has:
         # 返回API响应
