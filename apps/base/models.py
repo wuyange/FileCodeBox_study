@@ -26,7 +26,7 @@ async_engine = create_async_engine(url=URL.create(settings.mysql_driver,
 metadata = MetaData()
 # 创建异步的会话管理对象
 AsyncSessionLocal = sessionmaker(bind=async_engine, expire_on_commit=False, class_=AsyncSession, 
-                                 autocommit=False, autoflush=False, future=False)
+                                 autocommit=False, autoflush=False)
 
 # 创建ORM模型基类
 class Base(DeclarativeBase):

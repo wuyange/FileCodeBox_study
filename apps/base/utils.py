@@ -9,6 +9,7 @@ from fastapi import UploadFile, HTTPException
 
 from apps.base.depends import IPRateLimit
 from apps.base.models import FileCodes
+from apps.base.depends import async_context_get_db
 from core.settings import settings
 from core.utils import get_random_num, get_random_string, max_save_times_desc
 
@@ -83,6 +84,7 @@ async def get_random_code(style='num'):
     while True:
         code = await get_random_num() if style == 'num' else await get_random_string()
         if not await FileCodes.filter(code=code).exists():
+        
             return code
 
 
