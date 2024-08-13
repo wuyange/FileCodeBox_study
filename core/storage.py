@@ -92,7 +92,7 @@ class SystemFileStorage(FileStorageInterface):
         return await get_file_url(file_code.code)
 
     async def get_file_response(self, file_code: FileCodes):
-        file_path:Path = self.root_path / await file_code.get_file_path()
+        file_path:Path = self.root_path / (await file_code.get_file_path())
         if not file_path.exists():
             return APIResponse(code=404, detail='文件已过期删除')
         return FileResponse(file_path, filename=file_code.prefix + file_code.suffix)
