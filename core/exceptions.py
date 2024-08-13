@@ -28,4 +28,4 @@ class ApiExceptionHandler:
         return JSONResponse(content=APIResponse(code=500, message='Internal Server Error', detail='服务器内部错误').dict(), status_code=500)
 
     async def http_exception_handler(self, request: Request, exc: StarletteHTTPException):
-        return JSONResponse(content=APIResponse(code=exc.status_code, message=exc.detail, detail=exc.details).dict(), status_code=exc.status_code)
+        return JSONResponse(content=APIResponse(code=exc.status_code, message=exc.detail, detail=exc.detail).dict(), status_code=exc.status_code)
