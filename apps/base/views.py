@@ -6,12 +6,12 @@
 from fastapi import APIRouter, Form, UploadFile, File, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import Select
-from typing import Union
+from typing import Union, Tuple
 
 from apps.admin.depends import admin_required
 from apps.base.models import FileCodes
 from apps.base.pydantics import SelectFileModel
-from apps.base.utils import get_expire_info, get_file_path_name, ip_limit
+from apps.base.utils import get_expire_info, get_file_path_name
 from core.response import APIResponse
 from core.settings import settings
 from core.storage import storages, FileStorageInterface
@@ -28,7 +28,7 @@ share_api = APIRouter(
 # 分享文本的API
 @share_api.post('/text/', dependencies=[Depends(admin_required)])
 async def share_text(text: str = Form(...), expire_value: int = Form(default=1, gt=0), 
-                     expire_style: str = Form(default='day'), ip: str = Depends(ip_limit['upload']), 
+                     expire_style: str = Form(default='day'), 
                      db_session: AsyncSession = Depends(depends_get_db_session)):
     # 获取大小
     text_size = len(text)
@@ -48,8 +48,8 @@ async def share_text(text: str = Form(...), expire_value: int = Form(default=1, 
         size=len(text),
         prefix='文本分享',
     ))
-    # 添加IP到限制列表
-    ip_limit['upload'].add_ip(ip)
+    # # 添加IP到限制列表
+    # ip_limit['upload'].add_ip(ip)
     # 返回API响应
     return APIResponse(detail={
         'code': code,
@@ -59,8 +59,7 @@ async def share_text(text: str = Form(...), expire_value: int = Form(default=1, 
 # 分享文件的API
 @share_api.post('/file/', dependencies=[Depends(admin_required)])
 async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: str = Form(default='day'), 
-                     file: UploadFile = File(...), ip: str = Depends(ip_limit['upload']), 
-                     db_session: AsyncSession = Depends(depends_get_db_session)):
+                     file: UploadFile = File(...), db_session: AsyncSession = Depends(depends_get_db_session)):
     if file.size > settings.uploadSize:
         # 转换为 MB 并格式化输出
         max_size_mb = settings.uploadSize / (1024 * 1024)
@@ -86,8 +85,8 @@ async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: st
         expired_count=expired_count,
         used_count=used_count,
     ))
-    # 添加IP到限制列表
-    ip_limit['upload'].add_ip(ip)
+    # # 添加IP到限制列表
+    # ip_limit['upload'].add_ip(ip)
     # 返回API响应
     return APIResponse(detail={
         'code': code,
@@ -96,7 +95,7 @@ async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: st
 
 
 # 根据code获取文件
-async def get_code_file_by_code(code, check=True, db_session: AsyncSession = Depends(depends_get_db_session)):
+async def get_code_file_by_code(code, check=True, db_session: AsyncSession = Depends(depends_get_db_session)) -> Tuple[bool, Union[FileCodes, str]]:
     # 查询文件
     file_code:Union[FileCodes, None] = (await db_session.execute(Select(FileCodes).where(FileCodes.code == code))).scalars().first()
     # 检查文件是否存在
@@ -110,14 +109,14 @@ async def get_code_file_by_code(code, check=True, db_session: AsyncSession = Dep
 
 # 获取文件的API
 @share_api.get('/select/')
-async def get_code_file(code: str, ip: str = Depends(ip_limit['error']), db_session: AsyncSession = Depends(depends_get_db_session)):
+async def get_code_file(code: str, db_session: AsyncSession = Depends(depends_get_db_session)):
     file_storage: FileStorageInterface = storages[settings.file_storage]()
     # 获取文件
     has, file_code = await get_code_file_by_code(code, db_session=db_session)
     # 检查文件是否存在
     if not has:
-        # 添加IP到限制列表
-        ip_limit['error'].add_ip(ip)
+        # # 添加IP到限制列表
+        # ip_limit['error'].add_ip(ip)
         # 返回API响应
         return APIResponse(code=404, detail=file_code)
     # 更新文件的使用次数和过期次数
@@ -132,15 +131,14 @@ async def get_code_file(code: str, ip: str = Depends(ip_limit['error']), db_sess
 
 # 选择文件的API
 @share_api.post('/select/')
-async def select_file(data: SelectFileModel, ip: str = Depends(ip_limit['error']), 
-                      db_session: AsyncSession = Depends(depends_get_db_session)):
+async def select_file(data: SelectFileModel, db_session: AsyncSession = Depends(depends_get_db_session)):
     file_storage: FileStorageInterface = storages[settings.file_storage]()
     # 获取文件
     has, file_code = await get_code_file_by_code(data.code, db_session=db_session)
     # 检查文件是否存在
     if not has:
         # 添加IP到限制列表
-        ip_limit['error'].add_ip(ip)
+        # ip_limit['error'].add_ip(ip)
         # 返回API响应
         return APIResponse(code=404, detail=file_code)
     # 更新文件的使用次数和过期次数
@@ -160,13 +158,13 @@ async def select_file(data: SelectFileModel, ip: str = Depends(ip_limit['error']
 
 # 下载文件的API
 @share_api.get('/download')
-async def download_file(key: str, code: str, ip: str = Depends(ip_limit['error']), db_session: AsyncSession = Depends(depends_get_db_session)):
+async def download_file(key: str, code: str, db_session: AsyncSession = Depends(depends_get_db_session)):
     file_storage: FileStorageInterface = storages[settings.file_storage]()
     # 检查token是否有效
     is_valid = await get_select_token(code) == key
-    if not is_valid:
-        # 添加IP到限制列表
-        ip_limit['error'].add_ip(ip)
+    # if not is_valid:
+    #     # 添加IP到限制列表
+    #     ip_limit['error'].add_ip(ip)
     # 获取文件
     has, file_code = await get_code_file_by_code(code, False, db_session=db_session)
     # 检查文件是否存在

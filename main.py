@@ -14,9 +14,9 @@ from sqlalchemy import Select
 from typing import Union
 from tortoise.contrib.fastapi import register_tortoise
 
-from apps.base.depends import IPRateLimit
+# from apps.base.depends import IPRateLimit
 from apps.base.models import KeyValue, Base, async_engine
-from apps.base.utils import ip_limit
+# from apps.base.utils import ip_limit
 from apps.base.views import share_api
 from apps.admin.views import admin_api
 from apps.base.depends import async_context_get_db
@@ -145,10 +145,10 @@ async def startup_event():
     app.state.redis_client = aioredis.from_url(redis_url, encoding='utf-8', max_connections=10, decode_responses=True)
     # 启动后台任务，不定时删除过期文件
     asyncio.create_task(delete_expire_files())
-    ip_limit['error'].minutes = settings.errorMinute
-    ip_limit['error'].count = settings.errorCount
-    ip_limit['upload'].minutes = settings.uploadMinute
-    ip_limit['upload'].count = settings.uploadCount
+    # ip_limit['error'].minutes = settings.errorMinute
+    # ip_limit['error'].count = settings.errorCount
+    # ip_limit['upload'].minutes = settings.uploadMinute
+    # ip_limit['upload'].count = settings.uploadCount
 
 @app.on_event('shutdown')
 async def shutdown_event():
