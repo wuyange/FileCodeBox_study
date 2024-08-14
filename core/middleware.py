@@ -108,7 +108,6 @@ class IPLimitMIddleware:
         async def custom_send(message):
             # 统计错误次数
             if message['type'] == 'http.response.start':
-                print(message)
                 status_code = message['status']
                 if status_code != 200 or message:
                     await redis_client.incr(f'IP:{client_ip}:error')
