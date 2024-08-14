@@ -37,7 +37,7 @@ class FileCodes(Base):
     __tablename__ = 'file_codes'
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='主键Id', autoincrement=True)
-    code: Mapped[int] = mapped_column(Integer, comment='分享码', index=True, unique=True)
+    code: Mapped[str] = mapped_column(String(64), comment='分享码', index=True, unique=True)
     prefix: Mapped[str] = mapped_column(String(255), comment='前缀', default='')
     suffix: Mapped[str] = mapped_column(String(255), comment='后缀', default='')
     uuid_file_name: Mapped[str] = mapped_column(String(255), comment='uuid文件名', nullable=True)
