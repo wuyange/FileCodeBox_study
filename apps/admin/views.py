@@ -3,9 +3,10 @@
 # @File    : views.py
 # @Software: PyCharm
 import math
+import httpx
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import Select, Delete, func
 
@@ -22,10 +23,33 @@ admin_api = APIRouter(
     tags=['管理'],
 )
 
-
-@admin_api.post('/login', dependencies=[Depends(admin_required)])
+@admin_api.get("/login")
 async def login():
-    return APIResponse()
+    return RedirectResponse(
+        f"https://github.com/login/oauth/authorize?client_id={settings.client_id}&redirect_uri={settings.redirect_uri}"
+    )
+
+@admin_api.get("/callback")
+async def callback(code: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://github.com/login/oauth/access_token",
+            headers={"Accept": "application/json"},
+            data={
+                "client_id": settings.client_id,
+                "client_secret": settings.client_secrets,
+                "code": code,
+                "redirect_uri": settings.redirect_uri,
+            },
+        )
+        token_data = response.json()
+        access_token = token_data.get("access_token")
+
+        if not access_token:
+            raise JSONResponse(status_code=400, content=APIResponse(code=400, detail='获取access_token失败'))
+
+    # return APIResponse(detail={"access_token": access_token}, code=200)
+    return {"access_token": access_token}
 
 
 @admin_api.delete('/file/delete', dependencies=[Depends(admin_required)])

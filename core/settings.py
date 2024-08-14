@@ -33,12 +33,17 @@ class DefaultSettings(BaseSettings):
     expireStyle:List[str] = ['day', 'hour', 'minute', 'forever', 'count']
     opacity:float = 0.9
     background:str = ''
-    error_count:int = 5
+    error_count:int = 100
     error_time_window:int = 60
     request_count:int = 10
     request_time_window:int = 120
     update_count:int = 2
     update_time_window:int = 60
+    
+    # github
+    client_id:str = 'Ov23liXjjeEA88J7Oof7'
+    client_secrets:str = '98a0c01358b141719801f5dec3d60dc884d62f10'
+    redirect_uri:str = 'http://127.0.0.1/admin/callback'
 
     # server
     admin_token:str = 'FileCodeBox2023'
@@ -49,7 +54,7 @@ class DefaultSettings(BaseSettings):
     redis_host:str = '127.0.0.1'
     redis_port:int = 6379
     redis_username:str = 'default'
-    redis_password:str = 'YS@147258'
+    redis_password:str = '123456'
     redis_db:int = 1
     
     #mysql
