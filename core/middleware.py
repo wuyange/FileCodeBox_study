@@ -111,6 +111,7 @@ class IPLimitMIddleware:
             if message['type'] == 'http.response.start':
                 status_code = message['status']
                 if status_code != 200:
+                    print(status_code)
                     await redis_client.incr(f'IP:{client_ip}:error')
                     await redis_client.expire(f'IP:{client_ip}:error', self.error_time_window)
             await send(message)
