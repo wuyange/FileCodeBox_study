@@ -5,8 +5,9 @@
 import math
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import Select, Delete, Update, func
+from sqlalchemy import Select, Delete, func
 
 from apps.admin.depends import admin_required
 from apps.admin.pydantics import IDData
@@ -37,12 +38,6 @@ async def file_delete(data: IDData, db_session: AsyncSession = Depends(depends_g
 
 @admin_api.get('/file/list', dependencies=[Depends(admin_required)])
 async def file_list(page: float = 1, size: int = 10, db_session: AsyncSession = Depends(depends_get_db_session)):
-    # return APIResponse(detail={
-    #     'page': page,
-    #     'size': size,
-    #     'data': await FileCodes.all().limit(size).offset((math.ceil(page) - 1) * size),
-    #     'total': await FileCodes.all().count(),
-    # })
     return APIResponse(detail={
         'page': page,
         'size': size,
@@ -69,7 +64,7 @@ async def update_config(data: dict, db_session: AsyncSession = Depends(depends_g
         else:
             data[key] = value
     if admin_token is None or admin_token == '':
-        return APIResponse(code=400, detail='管理员密码不能为空')
+        return JSONResponse(content=APIResponse(code=400, detail='管理员密码不能为空'), status_code=400)
     key:KeyValue = (await db_session.execute(Select(KeyValue).where(KeyValue.key == 'settings'))).scalars().first()
     key.value = data
     for k, v in data.items():
@@ -94,7 +89,7 @@ async def file_download(id: int):
     # 检查文件是否存在
     if not has:
         # 返回API响应
-        return APIResponse(code=404, detail='文件不存在')
+        return JSONResponse(content=APIResponse(code=404, detail='文件不存在'), status_code=404)
     # 如果文件是文本，返回文本内容，否则返回文件响应
     if file_code.text:
         return APIResponse(detail=file_code.text)

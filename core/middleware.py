@@ -2,7 +2,6 @@ import time
 from datetime import datetime
 from loguru import logger
 from fastapi import Request
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 from typing import Dict, AnyStr
 

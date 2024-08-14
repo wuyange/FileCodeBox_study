@@ -4,6 +4,7 @@
 # @Software: PyCharm
 from typing import Optional
 from threading import local
+from fastapi.responses import JSONResponse
 
 import aiohttp
 import asyncio
@@ -67,13 +68,6 @@ class SystemFileStorage(FileStorageInterface):
         self.chunk_size = 256 * 1024
         self.root_path = data_root
 
-    # def _save(self, file, save_path):
-    #     with open(save_path, 'wb') as f:
-    #         chunk = file.read(self.chunk_size)
-    #         while chunk:
-    #             f.write(chunk)
-    #             chunk = file.read(self.chunk_size)
-
     async def save_file(self, file: UploadFile, save_path: str):
         save_path:Path = self.root_path / save_path
         if not save_path.parent.exists():
@@ -81,7 +75,6 @@ class SystemFileStorage(FileStorageInterface):
         async with aiofiles.open(save_path, "wb") as out_file:
             while content := await file.read(1024):  # 每次读取 1024 字节
                 await out_file.write(content)
-        # await asyncio.to_thread(self._save, file.file, save_path)
 
     async def delete_file(self, file_code: FileCodes):
         save_path:Path = self.root_path / (await file_code.get_file_path)
@@ -94,7 +87,7 @@ class SystemFileStorage(FileStorageInterface):
     async def get_file_response(self, file_code: FileCodes):
         file_path:Path = self.root_path / (await file_code.get_file_path)
         if not file_path.exists():
-            return APIResponse(code=404, detail='文件已过期删除')
+            return JSONResponse(content=APIResponse(code=404, detail='文件已过期删除'), status_code=404)
         return FileResponse(file_path, filename=file_code.prefix + file_code.suffix)
 
 
@@ -259,45 +252,8 @@ class OneDriveFileStorage(FileStorageInterface):
             return await asyncio.to_thread(self._get_file_url, await file_code.get_file_path, f'{file_code.prefix}{file_code.suffix}')
 
 
-# class OpenDALFileStorage(FileStorageInterface):
-#     def __init__(self):
-#         try:
-#             import opendal
-#         except ImportError:
-#             raise ImportError('请先安装 `opendal`, 例如: "pip install opendal"')
-#         self.service = settings.opendal_scheme
-#         service_settings = {}
-#         for key, value in settings.items():
-#             if key.startswith('opendal_' + self.service):
-#                 setting_name = key.split('_', 2)[2]
-#                 service_settings[setting_name] = value
-#         self.operator = opendal.AsyncOperator(settings.opendal_scheme, **service_settings)
-
-#     async def save_file(self, file: UploadFile, save_path: str):
-#         await self.operator.write(save_path, file.file.read())
-
-#     async def delete_file(self, file_code: FileCodes):
-#         await self.operator.delete(await file_code.get_file_path())
-
-#     async def get_file_url(self, file_code: FileCodes):
-#         return await get_file_url(file_code.code)
-
-#     async def get_file_response(self, file_code: FileCodes):
-#         try:
-#             filename = file_code.prefix + file_code.suffix
-#             content = await self.operator.read(await file_code.get_file_path())
-#             headers = {
-#                 "Content-Disposition": f'attachment; filename="{filename}"'
-#             }
-#             return Response(content, headers=headers, media_type="application/octet-stream")
-#         except Exception as e:
-#             print(e, file=sys.stderr)
-#             raise HTTPException(status_code=404, detail="文件已过期删除")
-
-
 storages = {
     'local': SystemFileStorage,
     's3': S3FileStorage,
-    'onedrive': OneDriveFileStorage,
-    # 'opendal': OpenDALFileStorage,
+    'onedrive': OneDriveFileStorage
 }

@@ -4,6 +4,7 @@
 # @Software: PyCharm
 # 导入所需的库和模块
 from fastapi import APIRouter, Form, UploadFile, File, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import Select
 from typing import Union, Tuple
@@ -28,8 +29,7 @@ share_api = APIRouter(
 # 分享文本的API
 @share_api.post('/text/', dependencies=[Depends(admin_required)])
 async def share_text(text: str = Form(...), expire_value: int = Form(default=1, gt=0), 
-                     expire_style: str = Form(default='day'), 
-                     db_session: AsyncSession = Depends(depends_get_db_session)):
+                     expire_style: str = Form(default='day'), db_session: AsyncSession = Depends(depends_get_db_session)):
     # 获取大小
     text_size = len(text)
     # 限制 222KB
@@ -48,9 +48,7 @@ async def share_text(text: str = Form(...), expire_value: int = Form(default=1, 
         size=len(text),
         prefix='文本分享',
     ))
-    # # 添加IP到限制列表
-    # ip_limit['upload'].add_ip(ip)
-    # 返回API响应
+
     return APIResponse(detail={
         'code': code,
     })
@@ -85,9 +83,7 @@ async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: st
         expired_count=expired_count,
         used_count=used_count,
     ))
-    # # 添加IP到限制列表
-    # ip_limit['upload'].add_ip(ip)
-    # 返回API响应
+
     return APIResponse(detail={
         'code': code,
         'name': file.filename,
@@ -115,16 +111,12 @@ async def get_code_file(code: str, db_session: AsyncSession = Depends(depends_ge
     has, file_code = await get_code_file_by_code(code, db_session=db_session)
     # 检查文件是否存在
     if not has:
-        # # 添加IP到限制列表
-        # ip_limit['error'].add_ip(ip)
-        # 返回API响应
-        return APIResponse(code=404, detail=file_code)
+        return JSONResponse(content=APIResponse(code=404, detail=file_code), status_code=404)
     # 更新文件的使用次数和过期次数
     file_code.used_count += 1
     if file_code.expired_count > 0:
         file_code.expired_count -= 1
-    # # 保存文件
-    # await file_code.save()
+
     # 返回文件响应
     return await file_storage.get_file_response(file_code)
 
@@ -137,16 +129,12 @@ async def select_file(data: SelectFileModel, db_session: AsyncSession = Depends(
     has, file_code = await get_code_file_by_code(data.code, db_session=db_session)
     # 检查文件是否存在
     if not has:
-        # 添加IP到限制列表
-        # ip_limit['error'].add_ip(ip)
-        # 返回API响应
-        return APIResponse(code=404, detail=file_code)
+        return JSONResponse(content=APIResponse(code=404, detail=file_code), status_code=404)
     # 更新文件的使用次数和过期次数
     file_code.used_count += 1
     if file_code.expired_count > 0:
         file_code.expired_count -= 1
-    # # 保存文件
-    # await file_code.save()
+        
     # 返回API响应
     return APIResponse(detail={
         'code': file_code.code,
@@ -160,17 +148,12 @@ async def select_file(data: SelectFileModel, db_session: AsyncSession = Depends(
 @share_api.get('/download')
 async def download_file(key: str, code: str, db_session: AsyncSession = Depends(depends_get_db_session)):
     file_storage: FileStorageInterface = storages[settings.file_storage]()
-    # 检查token是否有效
-    is_valid = await get_select_token(code) == key
-    # if not is_valid:
-    #     # 添加IP到限制列表
-    #     ip_limit['error'].add_ip(ip)
     # 获取文件
     has, file_code = await get_code_file_by_code(code, False, db_session=db_session)
     # 检查文件是否存在
     if not has:
         # 返回API响应
-        return APIResponse(code=404, detail='文件不存在')
+        return JSONResponse(content=APIResponse(code=404, detail='文件不存在'), status_code=404)
     # 如果文件是文本，返回文本内容，否则返回文件响应
     if file_code.text:
         return APIResponse(detail=file_code.text)

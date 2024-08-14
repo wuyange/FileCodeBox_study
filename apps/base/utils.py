@@ -8,7 +8,6 @@ import os
 from fastapi import UploadFile, HTTPException
 from sqlalchemy import Select
 
-# from apps.base.depends import IPRateLimit
 from apps.base.models import FileCodes
 from apps.base.depends import async_context_get_db
 from core.settings import settings
@@ -87,9 +86,3 @@ async def get_random_code(style='num'):
         async with async_context_get_db() as db_session:
             if not (await db_session.execute(Select(FileCodes).where(FileCodes.code == code))).scalars().first():
                 return code
-
-
-# ip_limit = {
-#     'error': IPRateLimit(count=settings.uploadCount, minutes=settings.errorMinute),
-#     'upload': IPRateLimit(count=settings.errorCount, minutes=settings.errorMinute)
-# }
