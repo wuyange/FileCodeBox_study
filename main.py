@@ -101,24 +101,6 @@ async def redoc_html():
         redoc_js_url="/static/redoc/bundles/redoc.standalone.js",
 )
 
-# register_tortoise(
-#     app,
-#     generate_schemas=True,
-#     add_exception_handlers=True,
-#     config={
-#         'connections': {
-#             'default': f'sqlite://{data_root}/filecodebox.db'
-#         },
-#         'apps': {
-#             'models': {
-#                 "models": ["apps.base.models"],
-#                 'default_connection': 'default',
-#             }
-#         },
-#         "use_tz": False,
-#         "timezone": "Asia/Shanghai",
-#     }
-# )
 
 app.include_router(share_api)
 app.include_router(admin_api)

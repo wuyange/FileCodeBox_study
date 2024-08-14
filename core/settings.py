@@ -33,11 +33,7 @@ class DefaultSettings(BaseSettings):
     expireStyle:List[str] = ['day', 'hour', 'minute', 'forever', 'count']
     opacity:float = 0.9
     background:str = ''
-    uploadMinute:int = 1
-    uploadCount:int = 10
-    errorMinute:int = 1
-    errorCount:int = 1
-    error_count:int = 2
+    error_count:int = 5
     error_time_window:int = 60
     request_count:int = 10
     request_time_window:int = 120
