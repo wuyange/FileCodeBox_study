@@ -60,12 +60,14 @@ async def file_delete(data: IDData, db_session: AsyncSession = Depends(depends_g
     return APIResponse()
 
 
-@admin_api.get('/file/list', dependencies=[Depends(admin_required)])
+@admin_api.get('/file/list')
 async def file_list(page: float = 1, size: int = 10, db_session: AsyncSession = Depends(depends_get_db_session)):
+    data = (await db_session.execute(Select(FileCodes).limit(size).offset((math.ceil(page) - 1) * size))).scalars().all()
+    data = [{key: value for key, value in vars(file).items() if not key.startswith('_')} for file in data]
     return APIResponse(detail={
         'page': page,
         'size': size,
-        'data': await db_session.execute(Select(FileCodes).limit(size).offset((math.ceil(page) - 1) * size)),
+        'data': data,
         'total': (await db_session.execute(Select(func.count(FileCodes.id)))).scalar_one(),
     })
 

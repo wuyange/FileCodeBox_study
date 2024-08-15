@@ -51,7 +51,7 @@ class DefaultSettings(BaseSettings):
     showAdminAddr:int = 0
     
     # redis
-    redis_host:str = '127.0.0.1'
+    redis_host:str = '101.35.228.190'
     redis_port:int = 6379
     redis_username:str = 'default'
     redis_password:str = 'YS@147258'

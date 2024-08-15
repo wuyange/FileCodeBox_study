@@ -27,7 +27,7 @@ share_api = APIRouter(
 
 
 # 分享文本的API
-@share_api.post('/text/', dependencies=[Depends(admin_required)])
+@share_api.post('/text/')
 async def share_text(text: str = Form(...), expire_value: int = Form(default=1, gt=0), 
                      expire_style: str = Form(default='day'), db_session: AsyncSession = Depends(depends_get_db_session)):
     # 获取大小
@@ -55,7 +55,7 @@ async def share_text(text: str = Form(...), expire_value: int = Form(default=1, 
 
 
 # 分享文件的API
-@share_api.post('/file/', dependencies=[Depends(admin_required)])
+@share_api.post('/file/')
 async def share_file(expire_value: int = Form(default=1, gt=0), expire_style: str = Form(default='day'), 
                      file: UploadFile = File(...), db_session: AsyncSession = Depends(depends_get_db_session)):
     if file.size > settings.uploadSize:
