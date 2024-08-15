@@ -43,7 +43,7 @@ class DefaultSettings(BaseSettings):
     # github
     client_id:str = 'Ov23liXjjeEA88J7Oof7'
     client_secrets:str = '98a0c01358b141719801f5dec3d60dc884d62f10'
-    redirect_uri:str = 'http://127.0.0.1/admin/callback'
+    redirect_uri:str = 'http://101.35.228.190/admin/callback'
 
     # server
     admin_token:str = 'FileCodeBox2023'
