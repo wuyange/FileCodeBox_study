@@ -113,7 +113,7 @@ async def get_code_file(code: str, db_session: AsyncSession = Depends(depends_ge
     if not has:
         print(APIResponse(code=404, detail=file_code))
         print(type(APIResponse(code=404, detail=file_code)))
-        return JSONResponse(content=APIResponse(code=404, detail=file_code), status_code=404)
+        return JSONResponse(content=APIResponse(code=404, detail=file_code).dict()), status_code=404)
     # 更新文件的使用次数和过期次数
     file_code.used_count += 1
     if file_code.expired_count > 0:
@@ -131,9 +131,9 @@ async def select_file(data: SelectFileModel, db_session: AsyncSession = Depends(
     has, file_code = await get_code_file_by_code(data.code, db_session=db_session)
     # 检查文件是否存在
     if not has:
-        print(APIResponse(code=404, detail=file_code))
+        print(APIResponse(code=404, detail=file_code).dict())
         print(type(APIResponse(code=404, detail=file_code)))
-        return JSONResponse(content=APIResponse(code=404, detail=file_code), status_code=404)
+        return JSONResponse(content=APIResponse(code=404, detail=file_code).dict()), status_code=404)
     # 更新文件的使用次数和过期次数
     file_code.used_count += 1
     if file_code.expired_count > 0:
