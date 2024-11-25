@@ -58,10 +58,12 @@ class DefaultSettings(BaseSettings):
     redis_db:int = 1
     
     #mysql
-    mysql_host:str = 'cd-cdb-ewkh09j8.sql.tencentcdb.com'
-    mysql_password:str = 'YS147258'
+    # mysql_host:str = 'cd-cdb-ewkh09j8.sql.tencentcdb.com'
+    # mysql_password:str = 'YS147258'
+    mysql_host:str = 'localhost'
+    mysql_password:str = '123456'
     mysql_user:str = 'root'
-    mysql_port:int = 24965
+    mysql_port:int = 3306
     mysql_database:str = 'filecodebox'
     mysql_echo:bool = True
     mysql_pool_size:int = 20
