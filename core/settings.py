@@ -60,7 +60,7 @@ class DefaultSettings(BaseSettings):
     #mysql
     # mysql_host:str = 'cd-cdb-ewkh09j8.sql.tencentcdb.com'
     # mysql_password:str = 'YS147258'
-    mysql_host:str = 'localhost'
+    mysql_host:str = '101.35.228.190'
     mysql_password:str = '123456'
     mysql_user:str = 'root'
     mysql_port:int = 3306
